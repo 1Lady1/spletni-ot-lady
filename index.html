@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Сплетни от Lady | Паблик</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #2b1b3a 0%, #1a0f2a 100%);
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, 'Poppins', sans-serif;
+            padding: 25px 20px;
+            min-height: 100vh;
+            color: #f0eef7;
+            transition: background 0.3s;
+            position: relative;
+        }
+
+        .purple-full-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(110, 60, 160, 0.4);
+            backdrop-filter: blur(12px);
+            z-index: 0;
+            pointer-events: none;
+            box-shadow: inset 0 0 0 1px rgba(180, 120, 255, 0.3);
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 50px;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .left-column {
+            flex: 2;
+            min-width: 280px;
+        }
+
+        .right-column {
+            flex: 0.8;
+            min-width: 300px;
+            position: sticky;
+            top: 100px;
+            align-self: flex-start;
+            margin-right: 10px;
+        }
+
+        .pinned-card {
+            background: rgba(30, 20, 55, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            padding: 20px;
+            border: 1px solid rgba(180, 120, 255, 0.5);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .pinned-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #e0b3ff, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            border-bottom: 1px solid rgba(180, 120, 255, 0.5);
+            padding-bottom: 8px;
+        }
+        .pinned-list {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .pinned-item {
+            background: rgba(25, 18, 45, 0.6);
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid #c6a0ff;
+        }
+        .pinned-item h4 {
+            font-size: 1rem;
+            color: #d9b3ff;
+            margin-bottom: 5px;
+        }
+        .pinned-item p {
+            font-size: 0.8rem;
+            line-height: 1.3;
+            margin-bottom: 5px;
+        }
+        .pinned-date {
+            font-size: 0.65rem;
+            color: #c9b3e6;
+            text-align: right;
+        }
+        .pinned-reactions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .pinned-reaction-btn {
+            background: rgba(50, 30, 80, 0.6) !important;
+            padding: 3px 8px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            border: none;
+            cursor: pointer;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .empty-pinned {
+            text-align: center;
+            padding: 30px 15px;
+            color: #c9b3e6;
+            font-style: italic;
+        }
+        .unpin-btn {
+            margin-top: 8px;
+            width: 100%;
+            background: rgba(170, 62, 108, 0.7) !important;
+            font-size: 0.7rem;
+            padding: 5px 10px;
+            border-radius: 60px;
+        }
+
+        .site-title-stretched {
+            position: fixed;
+            top: 20px;
+            left: 25px;
+            font-size: 2rem;
+            font-weight: 800;
+            font-family: 'Segoe UI', 'Inter', system-ui, 'Poppins', sans-serif;
+            background: transparent !important;
+            padding: 0;
+            margin: 0;
+            z-index: 100;
+            white-space: nowrap;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            width: auto;
+            letter-spacing: 8px;
+        }
+        .title-rus-stretch {
+            font-weight: 800;
+            background: linear-gradient(135deg, #f5e6ff, #e0b3ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 8px;
+        }
+        .title-lady-stretch {
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffd89b, #ffb3ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-style: italic;
+            letter-spacing: 10px;
+        }
+
+        .gossip-card, .admin-badge, .menu-toggle-btn, .admin-slide-menu, .moderation-item {
+            background-color: rgba(30, 20, 50, 0.6) !important;
+            backdrop-filter: blur(8px);
+            transition: 0.2s;
+        }
+        .gossip-card {
+            background: rgba(25, 18, 45, 0.7) !important;
+            border-left: 5px solid #c6a0ff;
+            border-radius: 28px;
+            padding: 18px 22px;
+            margin-bottom: 20px;
+        }
+        button, .suggest-main-btn, .bg-change-btn, #changeBgBtn, .menu-toggle-btn {
+            background: rgba(100, 70, 160, 0.7) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(200, 150, 255, 0.6);
+            border-radius: 60px !important;
+            cursor: pointer;
+        }
+        button:hover, .suggest-main-btn:hover {
+            background: rgba(140, 100, 200, 0.85) !important;
+        }
+        .suggest-main-btn {
+            font-size: 1rem;
+            padding: 10px 28px;
+            color: #f0eef7;
+        }
+        #changeBgBtn, .bg-change-btn {
+            border-radius: 60px !important;
+            padding: 8px 24px;
+        }
+
+        /* ВЫЕЗЖАЮЩЕЕ МЕНЮ АДМИНА — ПОВЕРХ ВСЕГО, НЕ ПЕРЕКРЫВАЕТСЯ КНОПКОЙ */
+        .admin-slide-menu {
+            position: fixed;
+            left: -320px;
+            top: 0;
+            width: 280px;
+            height: 100%;
+            background: rgba(20, 12, 35, 0.95);
+            backdrop-filter: blur(16px);
+            transition: left 0.3s ease;
+            z-index: 10000;
+            padding: 80px 20px 30px;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.5);
+            border-right: 1px solid #c084fc;
+            border-radius: 0 20px 20px 0;
+        }
+        .admin-slide-menu.open {
+            left: 0;
+        }
+        /* КНОПКА АДМИН МЕНЮ — ТЕПЕРЬ НИЖЕ И НЕ ПЕРЕКРЫВАЕТ ПАНЕЛЬ */
+        .menu-toggle-btn {
+            position: fixed;
+            left: 18px;
+            top: 120px;
+            background: rgba(80, 50, 130, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid #c6a0ff;
+            border-radius: 60px;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            color: #f0e6ff;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .menu-toggle-btn:hover {
+            background: rgba(120, 80, 180, 0.9) !important;
+        }
+        .close-menu-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 40px;
+        }
+        .menu-title {
+            font-size: 1.3rem;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #c9a6ff;
+            display: inline-block;
+        }
+        .admin-menu-pass {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .admin-menu-pass input {
+            padding: 10px;
+            border-radius: 60px;
+            background: rgba(20, 12, 40, 0.8) !important;
+            border: 1px solid #b77cffaa;
+            color: white;
+            font-size: 1rem;
+        }
+        .admin-menu-pass button {
+            padding: 10px;
+            border-radius: 60px;
+        }
+        .moderation-area {
+            margin-top: 25px;
+            max-height: 55vh;
+            overflow-y: auto;
+        }
+        .moderation-item {
+            background: rgba(0,0,0,0.45);
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .moderation-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .logout-menu-btn {
+            margin-top: 30px;
+            width: 100%;
+            background: rgba(120, 60, 100, 0.7);
+            border-radius: 60px;
+        }
+        .bg-btn-container {
+            text-align: center;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+        .bg-btn-container.hidden-for-users {
+            display: none;
+        }
+        .suggest-btn-container {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 5, 20, 0.96);
+            backdrop-filter: blur(12px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .fullscreen-modal.active {
+            display: flex;
+        }
+        .fullscreen-modal-content {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(30, 20, 55, 0.95);
+            border-radius: 48px;
+            padding: 30px 28px;
+            border: 1px solid #c084fc;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .fullscreen-modal-content h2 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            text-align: center;
+            background: linear-gradient(135deg, #e0b3ff, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .fullscreen-modal-content input,
+        .fullscreen-modal-content textarea {
+            width: 100%;
+            background: rgba(20, 12, 40, 0.9);
+            border: 1px solid #b77cff;
+            border-radius: 32px;
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            color: #f0eaff;
+            font-family: inherit;
+            margin-bottom: 20px;
+            outline: none;
+        }
+        .fullscreen-modal-content input:focus,
+        .fullscreen-modal-content textarea:focus {
+            border-color: #e0b3ff;
+            box-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
+        }
+        .fullscreen-modal-content textarea {
+            min-height: 180px;
+            resize: vertical;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .modal-buttons button {
+            padding: 12px 28px;
+            font-size: 1rem;
+        }
+
+        .news-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .news-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(125deg, #FFE6BC, #c9a6ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .news-date {
+            font-size: 0.7rem;
+            color: #cfbef5;
+        }
+        .reactions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            border-top: 1px solid #a56eff60;
+            padding-top: 10px;
+            flex-wrap: wrap;
+        }
+        .reaction-btn {
+            background: rgba(50, 30, 80, 0.6) !important;
+            padding: 6px 12px;
+            border-radius: 60px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: white !important;
+            border: none;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .reaction-btn:hover {
+            transform: scale(1.02);
+            background: rgba(100, 70, 160, 0.8) !important;
+        }
+        .pin-btn {
+            background: rgba(80, 60, 120, 0.8) !important;
+        }
+        .delete-btn {
+            background: rgba(170, 62, 108, 0.7) !important;
+            border-radius: 60px;
+        }
+        .admin-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30, 20, 50, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 6px 14px;
+            border-radius: 60px;
+            font-size: 0.7rem;
+            z-index: 99;
+        }
+        footer {
+            text-align: center;
+            margin-top: 35px;
+            font-size: 0.7rem;
+            color: #b8a3d4;
+        }
+        #bgFileInput {
+            display: none;
+        }
+        .empty-feed-custom {
+            text-align: center;
+            padding: 55px 25px;
+            background: rgba(30, 20, 50, 0.55);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            color: #e2d1ff;
+            font-size: 1.2rem;
+            font-style: italic;
+        }
+        @media (max-width: 800px) {
+            .main-layout { flex-direction: column; gap: 30px; }
+            .right-column { position: static; margin-top: 20px; margin-right: 0; }
+            .site-title-stretched { font-size: 1rem; top: 12px; left: 12px; letter-spacing: 3px; }
+            .menu-toggle-btn { top: 90px; left: 10px; padding: 6px 14px; font-size: 0.7rem; }
+            .news-title { font-size: 1.2rem; }
+            .reaction-btn { padding: 4px 8px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="purple-full-bg"></div>
+    <div class="site-title-stretched">
+        <span class="title-rus-stretch">Сплетни от</span> 
+        <span class="title-lady-stretch">Lady</span>
+    </div>
+    <div class="menu-toggle-btn" id="menuToggleBtn">🔐 Админ меню</div>
+    <div id="adminMenu" class="admin-slide-menu">
+        <button class="close-menu-btn" id="closeMenuBtn">✖</button>
+        <div class="menu-title">Панель ведущей</div>
+        <div id="menuLoginBlock">
+            <div class="admin-menu-pass">
+                <input type="password" id="menuAdminPassword" placeholder="Пароль" autocomplete="off">
+                <button id="menuLoginBtn">Войти</button>
+            </div>
+        </div>
+        <div id="menuAdminContent" style="display: none;">
+            <div class="moderation-area" id="moderationListMenu"></div>
+            <button id="menuLogoutBtn" class="logout-menu-btn">Выйти из админа</button>
+        </div>
+    </div>
+    <div class="main-layout">
+        <div class="left-column">
+            <div style="max-width: 100%;">
+                <div id="bgButtonContainer" class="bg-btn-container hidden-for-users">
+                    <button id="changeBgBtn" class="bg-change-btn">🎨 Установить свой фон</button>
+                    <input type="file" id="bgFileInput" accept="image/*">
+                </div>
+                <div class="suggest-btn-container">
+                    <button id="openSuggestModalBtn" class="suggest-main-btn">ПРЕДЛОЖИТЬ СПЛЕТНЮ</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <h3 style="margin-bottom: 12px; opacity:0.9;">📰 Лента сплетен</h3>
+                    <div id="newsFeed" class="news-feed"><div class="empty-feed-custom">✨ Новых сплетен пока что нет... ✨</div></div>
+                </div>
+                <footer>✨ Админ модерирует сплетни. Предложи свою — жди одобрения. Ставь реакции!</footer>
+            </div>
+        </div>
+        <div class="right-column">
+            <div class="pinned-card">
+                <div class="pinned-title">🏆 СПЛЕТНИ НЕДЕЛИ!</div>
+                <div id="pinnedContent" class="pinned-list"><div class="empty-pinned">Нет закреплённых сплетен</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="admin-badge" id="adminBadge">Читатель</div>
+    <div id="suggestFullscreenModal" class="fullscreen-modal">
+        <div class="fullscreen-modal-content">
+            <h2>📝 Предложить сплетню</h2>
+            <input type="text" id="suggestTitle" placeholder="Заголовок" maxlength="80" autocomplete="off">
+            <textarea id="suggestText" placeholder="Текст сплетни... (макс 1000 символов)" maxlength="1000"></textarea>
+            <div class="modal-buttons">
+                <button id="closeModalBtn">Отмена</button>
+                <button id="submitSuggestBtn">Отправить</button>
+            </div>
+        </div>
+    </div>
+<script>
+    const ADMIN_PASSWORD = "lolo2288";
+    const ADMIN_SESSION_KEY = "podslushka_admin_auth";
+    let approvedPosts = [];
+    let suggestions = [];
+    let pinnedPostIds = [];
+    const MAX_PINNED = 10;
+    const STORAGE_APPROVED = "podslushka_approved";
+    const STORAGE_SUGGESTIONS = "podslushka_suggestions";
+    const STORAGE_PINNED = "podslushka_pinned_ids";
+    const BG_STORAGE_KEY = "podslushka_background";
+
+    const REACTIONS = [
+        { id: 'like', emoji: '&#128077;&#127995;', label: 'Нравится' },
+        { id: 'vomit', emoji: '🤮', label: 'Рвота' },
+        { id: 'laugh', emoji: '😂', label: 'Смех' },
+        { id: 'fire', emoji: '🔥', label: 'Огонек' }
+    ];
+
+    function setBackgroundImage(imageDataUrl) {
+        if (imageDataUrl && imageDataUrl !== 'undefined' && imageDataUrl !== 'null') {
+            document.body.style.background = `url("${imageDataUrl}") no-repeat center center fixed`;
+            document.body.style.backgroundSize = "cover";
+            localStorage.setItem(BG_STORAGE_KEY, imageDataUrl);
+        } else {
+            document.body.style.background = "linear-gradient(145deg, #2b1b3a 0%, #1a0f2a 100%)";
+            localStorage.removeItem(BG_STORAGE_KEY);
+        }
+    }
+    function loadSavedBackground() {
+        const savedBg = localStorage.getItem(BG_STORAGE_KEY);
+        if (savedBg && savedBg !== 'undefined' && savedBg !== 'null') setBackgroundImage(savedBg);
+    }
+    function saveData() {
+        localStorage.setItem(STORAGE_APPROVED, JSON.stringify(approvedPosts));
+        localStorage.setItem(STORAGE_SUGGESTIONS, JSON.stringify(suggestions));
+        localStorage.setItem(STORAGE_PINNED, JSON.stringify(pinnedPostIds));
+    }
+    function loadData() {
+        const storedApproved = localStorage.getItem(STORAGE_APPROVED);
+        if (storedApproved) {
+            try {
+                approvedPosts = JSON.parse(storedApproved);
+                approvedPosts.forEach(p => {
+                    if (p.reactions === undefined) p.reactions = { like: 0, vomit: 0, laugh: 0, fire: 0 };
+                    if (p.userReaction === undefined) p.userReaction = {};
+                });
+            } catch(e) { approvedPosts = []; }
+        }
+        if (!approvedPosts || approvedPosts.length === 0) {
+            approvedPosts = [{
+                id: Date.now(),
+                title: "24 года...",
+                content: "Оказывается литровка все это время играла с читами, он думал что самый умный, но по итогу спалился как самый последний олух. Что ж литровка, удачного бана на 24 года и удачного создания нового акка?",
+                date: "16.04.2025, 19:41:27",
+                timestamp: Date.now() - 86400000,
+                reactions: { like: 3, vomit: 0, laugh: 0, fire: 0 },
+                userReaction: {}
+            }];
+            saveData();
+        }
+        const storedSuggestions = localStorage.getItem(STORAGE_SUGGESTIONS);
+        if (storedSuggestions) { try { suggestions = JSON.parse(storedSuggestions); } catch(e) { suggestions = []; } } 
+        else { suggestions = []; }
+        const storedPinned = localStorage.getItem(STORAGE_PINNED);
+        if (storedPinned) {
+            try { pinnedPostIds = JSON.parse(storedPinned); if (!Array.isArray(pinnedPostIds)) pinnedPostIds = []; }
+            catch(e) { pinnedPostIds = []; }
+            pinnedPostIds = pinnedPostIds.filter(id => approvedPosts.some(p => p.id === id)).slice(0, MAX_PINNED);
+        } else { pinnedPostIds = []; }
+        approvedPosts.sort((a,b) => b.timestamp - a.timestamp);
+        suggestions.sort((a,b) => b.timestamp - a.timestamp);
+        saveData();
+    }
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+    function showToast(msg, bg="#9b4dff") {
+        let toast = document.createElement('div');
+        toast.innerText = msg;
+        toast.style.position = 'fixed';
+        toast.style.bottom = '70px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.backgroundColor = bg;
+        toast.style.color = 'white';
+        toast.style.fontWeight = 'bold';
+        toast.style.padding = '10px 22px';
+        toast.style.borderRadius = '60px';
+        toast.style.zIndex = '9999';
+        toast.style.backdropFilter = 'blur(8px)';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2200);
+    }
+    function handleReaction(postId, reactionId) {
+        const post = approvedPosts.find(p => p.id === postId);
+        if (!post) return;
+        if (!post.reactions) post.reactions = { like: 0, vomit: 0, laugh: 0, fire: 0 };
+        if (!post.userReaction) post.userReaction = {};
+        const userId = sessionStorage.getItem('user_id') || 'user_' + Date.now() + '_' + Math.random();
+        if (!sessionStorage.getItem('user_id')) sessionStorage.setItem('user_id', userId);
+        const oldReaction = post.userReaction[userId];
+        if (oldReaction === reactionId) {
+            post.reactions[reactionId] = (post.reactions[reactionId] || 0) - 1;
+            delete post.userReaction[userId];
+            showToast(`Реакция убрана`);
+        } else {
+            if (oldReaction) {
+                post.reactions[oldReaction] = (post.reactions[oldReaction] || 0) - 1;
+            }
+            post.reactions[reactionId] = (post.reactions[reactionId] || 0) + 1;
+            post.userReaction[userId] = reactionId;
+            const reaction = REACTIONS.find(r => r.id === reactionId);
+            showToast(`${reaction.emoji} ${reaction.label}!`);
+        }
+        saveData();
+        renderFeed();
+        renderPinned();
+    }
+    function renderPinned() {
+        const pinnedDiv = document.getElementById('pinnedContent');
+        if (!pinnedDiv) return;
+        const pinnedPosts = pinnedPostIds.map(id => approvedPosts.find(p => p.id === id)).filter(p => p);
+        if (pinnedPosts.length === 0) {
+            pinnedDiv.innerHTML = '<div class="empty-pinned">Нет закреплённых сплетен</div>';
+            return;
+        }
+        const isAdmin = isAdminAuthenticated();
+        let html = '';
+        for (let post of pinnedPosts) {
+            const unpinBtn = isAdmin ? `<button class="unpin-btn" data-id="${post.id}">📌 Открепить</button>` : '';
+            let reactionsHtml = '';
+            for (let r of REACTIONS) {
+                const count = post.reactions?.[r.id] || 0;
+                reactionsHtml += `<button class="pinned-reaction-btn pinned-reaction-${r.id}" data-id="${post.id}" data-reaction="${r.id}">${r.emoji} ${count}</button>`;
+            }
+            html += `
+                <div class="pinned-item" data-id="${post.id}">
+                    <h4>${escapeHtml(post.title)}</h4>
+                    <p>${escapeHtml(post.content.substring(0, 100))}${post.content.length > 100 ? '…' : ''}</p>
+                    <div class="pinned-date">${escapeHtml(post.date)}</div>
+                    <div class="pinned-reactions">
+                        ${reactionsHtml}
+                    </div>
+                    ${unpinBtn}
+                </div>
+            `;
+        }
+        pinnedDiv.innerHTML = html;
+        for (let r of REACTIONS) {
+            document.querySelectorAll(`.pinned-reaction-${r.id}`).forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    const reaction = btn.getAttribute('data-reaction');
+                    handleReaction(id, reaction);
+                });
+            });
+        }
+        if (isAdmin) {
+            document.querySelectorAll('.unpin-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    pinnedPostIds = pinnedPostIds.filter(pid => pid !== id);
+                    saveData();
+                    renderPinned();
+                    renderFeed();
+                    showToast("Сплетня откреплена");
+                });
+            });
+        }
+    }
+    function renderFeed() {
+        const feedDiv = document.getElementById('newsFeed');
+        if (!feedDiv) return;
+        if (approvedPosts.length === 0) {
+            feedDiv.innerHTML = `<div class="empty-feed-custom">✨ Новых сплетен пока что нет... ✨</div>`;
+            return;
+        }
+        let html = '';
+        const isAdmin = isAdminAuthenticated();
+        for (let post of approvedPosts) {
+            const safeTitle = escapeHtml(post.title);
+            const safeContent = escapeHtml(post.content);
+            const deleteBtn = isAdmin ? `<button class="delete-btn" data-id="${post.id}">🗑️ Удалить</button>` : '';
+            const isPinned = pinnedPostIds.includes(post.id);
+            const pinBtn = isAdmin ? `<button class="reaction-btn pin-btn" data-id="${post.id}">${isPinned ? '⭐ Закреплена' : '📌 Закрепить'}</button>` : '';
+            let reactionsHtml = '';
+            for (let r of REACTIONS) {
+                const count = post.reactions?.[r.id] || 0;
+                reactionsHtml += `<button class="reaction-btn react-${r.id}" data-id="${post.id}" data-reaction="${r.id}">${r.emoji} ${count}</button>`;
+            }
+            html += `
+                <div class="gossip-card">
+                    <div class="card-header">
+                        <div class="news-title">${safeTitle}</div>
+                        <div class="news-date">${escapeHtml(post.date)}</div>
+                    </div>
+                    <div class="news-content">${safeContent}</div>
+                    <div class="reactions">
+                        ${reactionsHtml}
+                        ${pinBtn}
+                        ${deleteBtn}
+                    </div>
+                </div>
+            `;
+        }
+        feedDiv.innerHTML = html;
+        for (let r of REACTIONS) {
+            document.querySelectorAll(`.react-${r.id}`).forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    const reaction = btn.getAttribute('data-reaction');
+                    handleReaction(id, reaction);
+                });
+            });
+        }
+        if (isAdmin) {
+            document.querySelectorAll('.pin-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    if (pinnedPostIds.includes(id)) {
+                        pinnedPostIds = pinnedPostIds.filter(pid => pid !== id);
+                        showToast("Сплетня откреплена");
+                    } else {
+                        if (pinnedPostIds.length >= MAX_PINNED) {
+                            showToast(`Нельзя закрепить больше ${MAX_PINNED} сплетен!`, "#c084fc");
+                            return;
+                        }
+                        pinnedPostIds.push(id);
+                        showToast("Сплетня закреплена в колонке 'Сплетни недели!'");
+                    }
+                    saveData();
+                    renderFeed();
+                    renderPinned();
+                });
+            });
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    pinnedPostIds = pinnedPostIds.filter(pid => pid !== id);
+                    approvedPosts = approvedPosts.filter(p => p.id !== id);
+                    saveData();
+                    renderFeed();
+                    renderPinned();
+                    showToast("Сплетня удалена");
+                });
+            });
+        }
+    }
+    function renderModerationMenu() {
+        const modDiv = document.getElementById('moderationListMenu');
+        if (!modDiv) return;
+        if (suggestions.length === 0) {
+            modDiv.innerHTML = '<div style="padding: 10px;">✨ Нет новых предложений.</div>';
+            return;
+        }
+        let html = '';
+        for (let sug of suggestions) {
+            html += `
+                <div class="moderation-item">
+                    <div style="font-weight:bold;">${escapeHtml(sug.title)}</div>
+                    <div style="font-size:0.8rem; margin:5px 0;">${escapeHtml(sug.content.substring(0, 80))}${sug.content.length>80 ? '…' : ''}</div>
+                    <div class="moderation-buttons">
+                        <button class="approve-suggest" data-id="${sug.id}" style="background:#5a3d8c; border-radius:40px;">✅ Одобрить</button>
+                        <button class="reject-suggest" data-id="${sug.id}" style="background:#8b4c6e; border-radius:40px;">❌ Отклонить</button>
+                    </div>
+                </div>
+            `;
+        }
+        modDiv.innerHTML = html;
+        document.querySelectorAll('.approve-suggest').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                const suggestion = suggestions.find(s => s.id === id);
+                if (suggestion) {
+                    approvedPosts.unshift({ 
+                        id: suggestion.id, 
+                        title: suggestion.title, 
+                        content: suggestion.content, 
+                        date: suggestion.date, 
+                        timestamp: suggestion.timestamp, 
+                        reactions: { like: 0, vomit: 0, laugh: 0, fire: 0 },
+                        userReaction: {}
+                    });
+                    suggestions = suggestions.filter(s => s.id !== id);
+                    saveData(); renderFeed(); renderModerationMenu(); renderPinned();
+                    showToast("Сплетня опубликована!");
+                }
+            });
+        });
+        document.querySelectorAll('.reject-suggest').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                suggestions = suggestions.filter(s => s.id !== id);
+                saveData(); renderModerationMenu();
+                showToast("Предложение отклонено.");
+            });
+        });
+    }
+    function submitSuggestion(title, content) {
+        if (!title.trim() || !content.trim()) { showToast("Заполните заголовок и текст!"); return false; }
+        suggestions.unshift({ id: Date.now(), title: title.trim(), content: content.trim(), date: new Date().toLocaleString(), timestamp: Date.now() });
+        saveData();
+        if (isAdminAuthenticated()) renderModerationMenu();
+        showToast("Сплетня отправлена на модерацию!");
+        return true;
+    }
+    function isAdminAuthenticated() { return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true'; }
+    function updateBackgroundButtonVisibility() {
+        const bgContainer = document.getElementById('bgButtonContainer');
+        if (bgContainer) {
+            if (isAdminAuthenticated()) bgContainer.classList.remove('hidden-for-users');
+            else bgContainer.classList.add('hidden-for-users');
+        }
+    }
+    function updateAdminUI() {
+        const isAdmin = isAdminAuthenticated();
+        const menuLoginBlock = document.getElementById('menuLoginBlock');
+        const menuAdminContent = document.getElementById('menuAdminContent');
+        const adminBadge = document.getElementById('adminBadge');
+        if (isAdmin) {
+            if(menuLoginBlock) menuLoginBlock.style.display = 'none';
+            if(menuAdminContent) menuAdminContent.style.display = 'block';
+            if(adminBadge) adminBadge.innerHTML = 'Администратор';
+            renderModerationMenu();
+        } else {
+            if(menuLoginBlock) menuLoginBlock.style.display = 'block';
+            if(menuAdminContent) menuAdminContent.style.display = 'none';
+            if(adminBadge) adminBadge.innerHTML = 'Читатель';
+        }
+        updateBackgroundButtonVisibility();
+        renderFeed();
+        renderPinned();
+    }
+    function adminLogin(password) {
+        if (password === ADMIN_PASSWORD) {
+            sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+            updateAdminUI();
+            showToast("Добро пожаловать, администратор!");
+            return true;
+        } else { showToast("Неверный пароль!"); return false; }
+    }
+    function adminLogout() { sessionStorage.removeItem(ADMIN_SESSION_KEY); updateAdminUI(); showToast("Вы вышли."); }
+    const menu = document.getElementById('adminMenu');
+    const menuToggle = document.getElementById('menuToggleBtn');
+    const closeMenu = document.getElementById('closeMenuBtn');
+    function openMenu() { menu.classList.add('open'); }
+    function closeMenuFunc() { menu.classList.remove('open'); }
+    if(menuToggle) menuToggle.addEventListener('click', openMenu);
+    if(closeMenu) closeMenu.addEventListener('click', closeMenuFunc);
+    const menuLoginBtn = document.getElementById('menuLoginBtn');
+    const menuPassword = document.getElementById('menuAdminPassword');
+    if(menuLoginBtn) menuLoginBtn.addEventListener('click', () => { if(adminLogin(menuPassword.value)) { menuPassword.value = ''; closeMenuFunc(); } });
+    const menuLogoutBtn = document.getElementById('menuLogoutBtn');
+    if(menuLogoutBtn) menuLogoutBtn.addEventListener('click', () => { adminLogout(); closeMenuFunc(); });
+    const modal = document.getElementById('suggestFullscreenModal');
+    const openModalBtn = document.getElementById('openSuggestModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const submitBtn = document.getElementById('submitSuggestBtn');
+    const suggestTitle = document.getElementById('suggestTitle');
+    const suggestText = document.getElementById('suggestText');
+    function openSuggestModal() { modal.classList.add('active'); suggestTitle.value = ''; suggestText.value = ''; suggestTitle.focus(); }
+    function closeSuggestModal() { modal.classList.remove('active'); }
+    if(openModalBtn) openModalBtn.addEventListener('click', openSuggestModal);
+    if(closeModalBtn) closeModalBtn.addEventListener('click', closeSuggestModal);
+    if(submitBtn) submitBtn.addEventListener('click', () => { if(submitSuggestion(suggestTitle.value, suggestText.value)) closeSuggestModal(); });
+    modal.addEventListener('click', (e) => { if(e.target === modal) closeSuggestModal(); });
+    const bgBtn = document.getElementById('changeBgBtn');
+    const bgInput = document.getElementById('bgFileInput');
+    if(bgBtn && bgInput) {
+        bgBtn.addEventListener('click', () => bgInput.click());
+        bgInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (ev) => { setBackgroundImage(ev.target.result); showToast("Фон сохранён!"); };
+                reader.readAsDataURL(file);
+            } else if(file) showToast("Выберите изображение");
+            bgInput.value = '';
+        });
+    }
+    function init() { loadData(); loadSavedBackground(); updateAdminUI(); }
+    init();
+</script>
+</body>
+</html>

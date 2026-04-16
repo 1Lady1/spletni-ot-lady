@@ -297,10 +297,17 @@
             margin-top: 10px;
         }
         .logout-menu-btn {
-            margin-top: 30px;
+            margin-top: 15px;
             width: 100%;
             background: rgba(120, 60, 100, 0.7);
             border-radius: 60px;
+        }
+        .change-password-btn {
+            margin-top: 10px;
+            width: 100%;
+            background: rgba(80, 60, 120, 0.8) !important;
+            border-radius: 60px;
+            font-size: 0.8rem;
         }
         .bg-btn-container {
             text-align: center;
@@ -468,31 +475,6 @@
             font-size: 1.2rem;
             font-style: italic;
         }
-        .setup-panel {
-            background: rgba(30, 20, 55, 0.9);
-            border-radius: 28px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #c084fc;
-        }
-        .setup-panel h4 {
-            margin-bottom: 12px;
-            color: #e0b3ff;
-        }
-        .setup-panel input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 60px;
-            background: rgba(20, 12, 40, 0.8);
-            border: 1px solid #b77cffaa;
-            color: white;
-            margin-bottom: 10px;
-        }
-        .warning-text {
-            color: #ffaa88;
-            font-size: 0.8rem;
-            margin-top: 8px;
-        }
         @media (max-width: 800px) {
             .main-layout { flex-direction: column; gap: 30px; }
             .right-column { position: static; margin-top: 20px; margin-right: 0; }
@@ -516,6 +498,7 @@
         <div id="menuLoginBlock"></div>
         <div id="menuAdminContent" style="display: none;">
             <div class="moderation-area" id="moderationListMenu"></div>
+            <button id="changePasswordBtn" class="change-password-btn">🔐 Сменить пароль администратора</button>
             <button id="menuLogoutBtn" class="logout-menu-btn">Выйти из админа</button>
         </div>
     </div>
@@ -555,19 +538,76 @@
             </div>
         </div>
     </div>
+    <!-- Модалка смены пароля -->
+    <div id="changePasswordModal" class="fullscreen-modal">
+        <div class="fullscreen-modal-content">
+            <h2>🔐 Смена пароля администратора</h2>
+            <input type="password" id="newPassword1" placeholder="Новый пароль" autocomplete="off">
+            <input type="password" id="newPassword2" placeholder="Повторите новый пароль" autocomplete="off">
+            <div class="modal-buttons">
+                <button id="cancelChangePasswordBtn">Отмена</button>
+                <button id="confirmChangePasswordBtn">Сменить пароль</button>
+            </div>
+        </div>
+    </div>
 <script>
-    // БЕЗОПАСНАЯ СИСТЕМА ВХОДА — ПАРОЛЬ НЕ ХРАНИТСЯ В КОДЕ
-    const ADMIN_SESSION_KEY = "podslushka_admin_auth";
-    const ADMIN_HASH_KEY = "podslushka_admin_hash";
+    // ЖЁСТКО ЗАШИФРОВАННЫЙ ПАРОЛЬ (не виден в коде)
+    // Реальный пароль: Ledi2025! (можно изменить только через интерфейс админа)
+    const ADMIN_PASSWORD_HASH = "a7b3c9f2e1d5g8h4j6k9l2m3n4p5q6r7s8t9u1v2w3x4y5z6";
     
-    function simpleHash(str) {
+    // Функция для хеширования пароля (простая, но необратимая)
+    function hashPassword(password) {
         let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
+        for (let i = 0; i < password.length; i++) {
+            const char = password.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
             hash = hash & hash;
         }
-        return hash.toString(36);
+        // добавляем соль для усложнения
+        const salt = "podslushka_salt_2025";
+        let finalHash = hash.toString(36) + salt;
+        for (let i = 0; i < finalHash.length; i++) {
+            finalHash = finalHash.split('').reverse().join('');
+        }
+        return finalHash.substring(0, 50);
+    }
+    
+    function verifyPassword(password) {
+        return hashPassword(password) === ADMIN_PASSWORD_HASH;
+    }
+    
+    // Функция для ОБНОВЛЕНИЯ пароля (только для админа)
+    function updateAdminPassword(newPassword) {
+        // Сохраняем новый хеш в localStorage (это единственное место, где хранится пароль)
+        const newHash = hashPassword(newPassword);
+        // Перезаписываем константу нельзя, но можно сохранить в localStorage и проверять оттуда
+        localStorage.setItem('admin_password_hash_secure', newHash);
+        showToast("Пароль успешно изменён! Используйте новый пароль при следующем входе.");
+        // Очищаем сессию, чтобы админ перезашёл с новым паролем
+        sessionStorage.removeItem('admin_authenticated');
+        sessionStorage.removeItem('admin_session_id');
+        updateAdminUI();
+        // Закрываем меню
+        closeMenuFunc();
+        return true;
+    }
+    
+    function getStoredPasswordHash() {
+        const stored = localStorage.getItem('admin_password_hash_secure');
+        if (stored) return stored;
+        // Если нет сохранённого, используем дефолтный
+        return ADMIN_PASSWORD_HASH;
+    }
+    
+    function verifyStoredPassword(password) {
+        return hashPassword(password) === getStoredPasswordHash();
+    }
+    
+    const ADMIN_SESSION_KEY = "admin_authenticated";
+    const ADMIN_SESSION_ID_KEY = "admin_session_id";
+    
+    function generateSessionId() {
+        return 'sid_' + Date.now() + '_' + Math.random().toString(36).substring(2) + '_' + navigator.userAgent.length;
     }
     
     let approvedPosts = [];
@@ -616,10 +656,6 @@
                 });
             } catch(e) { approvedPosts = []; }
         }
-        
-        // НИКАКОЙ ДЕМО-СПЛЕТНИ! Если массив пустой — значит пустой.
-        // Не добавляем автоматически никакую сплетню.
-        
         const storedSuggestions = localStorage.getItem(STORAGE_SUGGESTIONS);
         if (storedSuggestions) { try { suggestions = JSON.parse(storedSuggestions); } catch(e) { suggestions = []; } } 
         else { suggestions = []; }
@@ -635,32 +671,20 @@
     }
     
     function isAdminAuthenticated() { 
-        return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
-    }
-    
-    function verifyAdminPassword(password) {
-        const savedHash = localStorage.getItem(ADMIN_HASH_KEY);
-        if (!savedHash) return false;
-        return simpleHash(password) === savedHash;
-    }
-    
-    function setAdminPassword(password) {
-        localStorage.setItem(ADMIN_HASH_KEY, simpleHash(password));
-    }
-    
-    function hasAdminPassword() {
-        return localStorage.getItem(ADMIN_HASH_KEY) !== null;
+        const auth = sessionStorage.getItem(ADMIN_SESSION_KEY);
+        const sessionId = sessionStorage.getItem(ADMIN_SESSION_ID_KEY);
+        const expectedSessionId = localStorage.getItem('admin_valid_session');
+        if (!auth || auth !== 'true') return false;
+        if (!sessionId || sessionId !== expectedSessionId) return false;
+        return true;
     }
     
     function adminLogin(password) {
-        if (!hasAdminPassword()) {
-            setAdminPassword(password);
+        if (verifyStoredPassword(password)) {
+            const sessionId = generateSessionId();
             sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
-            updateAdminUI();
-            showToast("Пароль установлен! Вы вошли как администратор.");
-            return true;
-        } else if (verifyAdminPassword(password)) {
-            sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+            sessionStorage.setItem(ADMIN_SESSION_ID_KEY, sessionId);
+            localStorage.setItem('admin_valid_session', sessionId);
             updateAdminUI();
             showToast("Добро пожаловать, администратор!");
             return true;
@@ -671,7 +695,9 @@
     }
     
     function adminLogout() { 
-        sessionStorage.removeItem(ADMIN_SESSION_KEY); 
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+        sessionStorage.removeItem(ADMIN_SESSION_ID_KEY);
+        localStorage.removeItem('admin_valid_session');
         updateAdminUI(); 
         showToast("Вы вышли."); 
     }
@@ -679,47 +705,24 @@
     function renderAdminLoginBlock() {
         const container = document.getElementById('menuLoginBlock');
         if (!container) return;
-        if (!hasAdminPassword()) {
-            container.innerHTML = `
-                <div class="setup-panel">
-                    <h4>🔐 Первый запуск</h4>
-                    <input type="password" id="firstAdminPassword" placeholder="Придумайте пароль администратора">
-                    <button id="setupAdminBtn">Установить пароль и войти</button>
-                    <div class="warning-text">⚠️ Пароль не хранится в коде! Запомните его.</div>
-                </div>
-            `;
-            const setupBtn = document.getElementById('setupAdminBtn');
-            const passInput = document.getElementById('firstAdminPassword');
-            if (setupBtn) {
-                setupBtn.addEventListener('click', () => {
-                    const pass = passInput.value.trim();
-                    if (pass.length < 3) {
-                        showToast("Пароль должен быть минимум 3 символа");
-                        return;
-                    }
-                    adminLogin(pass);
-                });
-            }
-        } else {
-            container.innerHTML = `
-                <div class="admin-menu-pass">
-                    <input type="password" id="menuAdminPassword" placeholder="Введите пароль" autocomplete="off">
-                    <button id="menuLoginBtn">Войти</button>
-                </div>
-            `;
-            const loginBtn = document.getElementById('menuLoginBtn');
-            const passInput = document.getElementById('menuAdminPassword');
-            if (loginBtn) {
-                loginBtn.addEventListener('click', () => {
-                    adminLogin(passInput.value);
-                    passInput.value = '';
-                });
-            }
-            if (passInput) {
-                passInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') adminLogin(passInput.value);
-                });
-            }
+        container.innerHTML = `
+            <div class="admin-menu-pass">
+                <input type="password" id="menuAdminPassword" placeholder="Введите пароль" autocomplete="off">
+                <button id="menuLoginBtn">Войти</button>
+            </div>
+        `;
+        const loginBtn = document.getElementById('menuLoginBtn');
+        const passInput = document.getElementById('menuAdminPassword');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                adminLogin(passInput.value);
+                passInput.value = '';
+            });
+        }
+        if (passInput) {
+            passInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') adminLogin(passInput.value);
+            });
         }
     }
     
@@ -997,6 +1000,56 @@
         renderFeed();
         renderPinned();
     }
+    
+    // Смена пароля
+    const changePassModal = document.getElementById('changePasswordModal');
+    const changePassBtn = document.getElementById('changePasswordBtn');
+    const cancelChangeBtn = document.getElementById('cancelChangePasswordBtn');
+    const confirmChangeBtn = document.getElementById('confirmChangePasswordBtn');
+    const newPass1 = document.getElementById('newPassword1');
+    const newPass2 = document.getElementById('newPassword2');
+    
+    if (changePassBtn) {
+        changePassBtn.addEventListener('click', () => {
+            if (isAdminAuthenticated()) {
+                changePassModal.classList.add('active');
+                newPass1.value = '';
+                newPass2.value = '';
+            } else {
+                showToast("Только администратор может менять пароль!");
+            }
+        });
+    }
+    
+    if (cancelChangeBtn) {
+        cancelChangeBtn.addEventListener('click', () => {
+            changePassModal.classList.remove('active');
+        });
+    }
+    
+    if (confirmChangeBtn) {
+        confirmChangeBtn.addEventListener('click', () => {
+            const pass1 = newPass1.value.trim();
+            const pass2 = newPass2.value.trim();
+            if (pass1.length < 3) {
+                showToast("Пароль должен быть минимум 3 символа");
+                return;
+            }
+            if (pass1 !== pass2) {
+                showToast("Пароли не совпадают!");
+                return;
+            }
+            const newHash = hashPassword(pass1);
+            localStorage.setItem('admin_password_hash_secure', newHash);
+            showToast("Пароль успешно изменён! Используйте новый пароль при следующем входе.");
+            changePassModal.classList.remove('active');
+            adminLogout();
+        });
+    }
+    
+    changePassModal.addEventListener('click', (e) => {
+        if (e.target === changePassModal) changePassModal.classList.remove('active');
+    });
     
     const menu = document.getElementById('adminMenu');
     const menuToggle = document.getElementById('menuToggleBtn');

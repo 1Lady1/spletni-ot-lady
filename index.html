@@ -208,7 +208,6 @@
             padding: 8px 24px;
         }
 
-        /* ВЫЕЗЖАЮЩЕЕ МЕНЮ АДМИНА — ПОВЕРХ ВСЕГО, НЕ ПЕРЕКРЫВАЕТСЯ КНОПКОЙ */
         .admin-slide-menu {
             position: fixed;
             left: -320px;
@@ -227,7 +226,6 @@
         .admin-slide-menu.open {
             left: 0;
         }
-        /* КНОПКА АДМИН МЕНЮ — ТЕПЕРЬ НИЖЕ И НЕ ПЕРЕКРЫВАЕТ ПАНЕЛЬ */
         .menu-toggle-btn {
             position: fixed;
             left: 18px;
@@ -470,6 +468,31 @@
             font-size: 1.2rem;
             font-style: italic;
         }
+        .setup-panel {
+            background: rgba(30, 20, 55, 0.9);
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #c084fc;
+        }
+        .setup-panel h4 {
+            margin-bottom: 12px;
+            color: #e0b3ff;
+        }
+        .setup-panel input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 60px;
+            background: rgba(20, 12, 40, 0.8);
+            border: 1px solid #b77cffaa;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .warning-text {
+            color: #ffaa88;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
         @media (max-width: 800px) {
             .main-layout { flex-direction: column; gap: 30px; }
             .right-column { position: static; margin-top: 20px; margin-right: 0; }
@@ -490,12 +513,7 @@
     <div id="adminMenu" class="admin-slide-menu">
         <button class="close-menu-btn" id="closeMenuBtn">✖</button>
         <div class="menu-title">Панель ведущей</div>
-        <div id="menuLoginBlock">
-            <div class="admin-menu-pass">
-                <input type="password" id="menuAdminPassword" placeholder="Пароль" autocomplete="off">
-                <button id="menuLoginBtn">Войти</button>
-            </div>
-        </div>
+        <div id="menuLoginBlock"></div>
         <div id="menuAdminContent" style="display: none;">
             <div class="moderation-area" id="moderationListMenu"></div>
             <button id="menuLogoutBtn" class="logout-menu-btn">Выйти из админа</button>
@@ -538,8 +556,20 @@
         </div>
     </div>
 <script>
-    const ADMIN_PASSWORD = "lolo2288";
+    // БЕЗОПАСНАЯ СИСТЕМА ВХОДА — ПАРОЛЬ НЕ ХРАНИТСЯ В КОДЕ
     const ADMIN_SESSION_KEY = "podslushka_admin_auth";
+    const ADMIN_HASH_KEY = "podslushka_admin_hash";
+    
+    function simpleHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString(36);
+    }
+    
     let approvedPosts = [];
     let suggestions = [];
     let pinnedPostIds = [];
@@ -550,7 +580,7 @@
     const BG_STORAGE_KEY = "podslushka_background";
 
     const REACTIONS = [
-        { id: 'like', emoji: '&#128077;&#127995;', label: 'Нравится' },
+        { id: 'like', emoji: '👍', label: 'Нравится' },
         { id: 'vomit', emoji: '🤮', label: 'Рвота' },
         { id: 'laugh', emoji: '😂', label: 'Смех' },
         { id: 'fire', emoji: '🔥', label: 'Огонек' }
@@ -611,6 +641,96 @@
         suggestions.sort((a,b) => b.timestamp - a.timestamp);
         saveData();
     }
+    
+    function isAdminAuthenticated() { 
+        return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    }
+    
+    function verifyAdminPassword(password) {
+        const savedHash = localStorage.getItem(ADMIN_HASH_KEY);
+        if (!savedHash) return false;
+        return simpleHash(password) === savedHash;
+    }
+    
+    function setAdminPassword(password) {
+        localStorage.setItem(ADMIN_HASH_KEY, simpleHash(password));
+    }
+    
+    function hasAdminPassword() {
+        return localStorage.getItem(ADMIN_HASH_KEY) !== null;
+    }
+    
+    function adminLogin(password) {
+        if (!hasAdminPassword()) {
+            setAdminPassword(password);
+            sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+            updateAdminUI();
+            showToast("Пароль установлен! Вы вошли как администратор.");
+            return true;
+        } else if (verifyAdminPassword(password)) {
+            sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+            updateAdminUI();
+            showToast("Добро пожаловать, администратор!");
+            return true;
+        } else {
+            showToast("Неверный пароль!");
+            return false;
+        }
+    }
+    
+    function adminLogout() { 
+        sessionStorage.removeItem(ADMIN_SESSION_KEY); 
+        updateAdminUI(); 
+        showToast("Вы вышли."); 
+    }
+    
+    function renderAdminLoginBlock() {
+        const container = document.getElementById('menuLoginBlock');
+        if (!container) return;
+        if (!hasAdminPassword()) {
+            container.innerHTML = `
+                <div class="setup-panel">
+                    <h4>🔐 Первый запуск</h4>
+                    <input type="password" id="firstAdminPassword" placeholder="Придумайте пароль администратора">
+                    <button id="setupAdminBtn">Установить пароль и войти</button>
+                    <div class="warning-text">⚠️ Пароль не хранится в коде! Запомните его.</div>
+                </div>
+            `;
+            const setupBtn = document.getElementById('setupAdminBtn');
+            const passInput = document.getElementById('firstAdminPassword');
+            if (setupBtn) {
+                setupBtn.addEventListener('click', () => {
+                    const pass = passInput.value.trim();
+                    if (pass.length < 3) {
+                        showToast("Пароль должен быть минимум 3 символа");
+                        return;
+                    }
+                    adminLogin(pass);
+                });
+            }
+        } else {
+            container.innerHTML = `
+                <div class="admin-menu-pass">
+                    <input type="password" id="menuAdminPassword" placeholder="Введите пароль" autocomplete="off">
+                    <button id="menuLoginBtn">Войти</button>
+                </div>
+            `;
+            const loginBtn = document.getElementById('menuLoginBtn');
+            const passInput = document.getElementById('menuAdminPassword');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', () => {
+                    adminLogin(passInput.value);
+                    passInput.value = '';
+                });
+            }
+            if (passInput) {
+                passInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') adminLogin(passInput.value);
+                });
+            }
+        }
+    }
+    
     function escapeHtml(str) { if(!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     function showToast(msg, bg="#9b4dff") {
         let toast = document.createElement('div');
@@ -629,6 +749,7 @@
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2200);
     }
+    
     function handleReaction(postId, reactionId) {
         const post = approvedPosts.find(p => p.id === postId);
         if (!post) return;
@@ -654,6 +775,16 @@
         renderFeed();
         renderPinned();
     }
+    
+    function deletePost(postId) {
+        approvedPosts = approvedPosts.filter(p => p.id !== postId);
+        pinnedPostIds = pinnedPostIds.filter(pid => pid !== postId);
+        saveData();
+        renderFeed();
+        renderPinned();
+        showToast("Сплетня удалена");
+    }
+    
     function renderPinned() {
         const pinnedDiv = document.getElementById('pinnedContent');
         if (!pinnedDiv) return;
@@ -708,6 +839,7 @@
             });
         }
     }
+    
     function renderFeed() {
         const feedDiv = document.getElementById('newsFeed');
         if (!feedDiv) return;
@@ -779,16 +911,12 @@
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const id = parseInt(btn.getAttribute('data-id'));
-                    pinnedPostIds = pinnedPostIds.filter(pid => pid !== id);
-                    approvedPosts = approvedPosts.filter(p => p.id !== id);
-                    saveData();
-                    renderFeed();
-                    renderPinned();
-                    showToast("Сплетня удалена");
+                    deletePost(id);
                 });
             });
         }
     }
+    
     function renderModerationMenu() {
         const modDiv = document.getElementById('moderationListMenu');
         if (!modDiv) return;
@@ -839,6 +967,7 @@
             });
         });
     }
+    
     function submitSuggestion(title, content) {
         if (!title.trim() || !content.trim()) { showToast("Заполните заголовок и текст!"); return false; }
         suggestions.unshift({ id: Date.now(), title: title.trim(), content: content.trim(), date: new Date().toLocaleString(), timestamp: Date.now() });
@@ -847,7 +976,7 @@
         showToast("Сплетня отправлена на модерацию!");
         return true;
     }
-    function isAdminAuthenticated() { return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true'; }
+    
     function updateBackgroundButtonVisibility() {
         const bgContainer = document.getElementById('bgButtonContainer');
         if (bgContainer) {
@@ -855,6 +984,7 @@
             else bgContainer.classList.add('hidden-for-users');
         }
     }
+    
     function updateAdminUI() {
         const isAdmin = isAdminAuthenticated();
         const menuLoginBlock = document.getElementById('menuLoginBlock');
@@ -869,20 +999,13 @@
             if(menuLoginBlock) menuLoginBlock.style.display = 'block';
             if(menuAdminContent) menuAdminContent.style.display = 'none';
             if(adminBadge) adminBadge.innerHTML = 'Читатель';
+            renderAdminLoginBlock();
         }
         updateBackgroundButtonVisibility();
         renderFeed();
         renderPinned();
     }
-    function adminLogin(password) {
-        if (password === ADMIN_PASSWORD) {
-            sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
-            updateAdminUI();
-            showToast("Добро пожаловать, администратор!");
-            return true;
-        } else { showToast("Неверный пароль!"); return false; }
-    }
-    function adminLogout() { sessionStorage.removeItem(ADMIN_SESSION_KEY); updateAdminUI(); showToast("Вы вышли."); }
+    
     const menu = document.getElementById('adminMenu');
     const menuToggle = document.getElementById('menuToggleBtn');
     const closeMenu = document.getElementById('closeMenuBtn');
@@ -890,11 +1013,10 @@
     function closeMenuFunc() { menu.classList.remove('open'); }
     if(menuToggle) menuToggle.addEventListener('click', openMenu);
     if(closeMenu) closeMenu.addEventListener('click', closeMenuFunc);
-    const menuLoginBtn = document.getElementById('menuLoginBtn');
-    const menuPassword = document.getElementById('menuAdminPassword');
-    if(menuLoginBtn) menuLoginBtn.addEventListener('click', () => { if(adminLogin(menuPassword.value)) { menuPassword.value = ''; closeMenuFunc(); } });
+    
     const menuLogoutBtn = document.getElementById('menuLogoutBtn');
     if(menuLogoutBtn) menuLogoutBtn.addEventListener('click', () => { adminLogout(); closeMenuFunc(); });
+    
     const modal = document.getElementById('suggestFullscreenModal');
     const openModalBtn = document.getElementById('openSuggestModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
@@ -907,6 +1029,7 @@
     if(closeModalBtn) closeModalBtn.addEventListener('click', closeSuggestModal);
     if(submitBtn) submitBtn.addEventListener('click', () => { if(submitSuggestion(suggestTitle.value, suggestText.value)) closeSuggestModal(); });
     modal.addEventListener('click', (e) => { if(e.target === modal) closeSuggestModal(); });
+    
     const bgBtn = document.getElementById('changeBgBtn');
     const bgInput = document.getElementById('bgFileInput');
     if(bgBtn && bgInput) {
@@ -921,6 +1044,7 @@
             bgInput.value = '';
         });
     }
+    
     function init() { loadData(); loadSavedBackground(); updateAdminUI(); }
     init();
 </script>

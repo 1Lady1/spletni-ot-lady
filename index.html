@@ -616,18 +616,10 @@
                 });
             } catch(e) { approvedPosts = []; }
         }
-        if (!approvedPosts || approvedPosts.length === 0) {
-            approvedPosts = [{
-                id: Date.now(),
-                title: "24 года...",
-                content: "Оказывается литровка все это время играла с читами, он думал что самый умный, но по итогу спалился как самый последний олух. Что ж литровка, удачного бана на 24 года и удачного создания нового акка?",
-                date: "16.04.2025, 19:41:27",
-                timestamp: Date.now() - 86400000,
-                reactions: { like: 3, vomit: 0, laugh: 0, fire: 0 },
-                userReaction: {}
-            }];
-            saveData();
-        }
+        
+        // НИКАКОЙ ДЕМО-СПЛЕТНИ! Если массив пустой — значит пустой.
+        // Не добавляем автоматически никакую сплетню.
+        
         const storedSuggestions = localStorage.getItem(STORAGE_SUGGESTIONS);
         if (storedSuggestions) { try { suggestions = JSON.parse(storedSuggestions); } catch(e) { suggestions = []; } } 
         else { suggestions = []; }
